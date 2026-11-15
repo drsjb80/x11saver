@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Screensaver runner. Usage: python3 screensaver.py <plugin>
+
+A plugin is a module in plugins/ that defines:
+    init(screen, size)   - called once after the display is set up
+    render(screen, dt)   - called every frame; dt is seconds since last frame
+    shutdown()           - called once before exit
+Optional:
+    FPS = <n>            - frame rate (default 30)
+"""
+import importlib
+import os
+import subprocess
+import sys
+
+import pygame
+
+GRACE_MS = 1000   # ignore input for this long after start (avoids spurious events)
+DEFAULT_FPS = 30   # a plugin can set FPS = <n> at module level to override
+
+# Lock commands per desktop, keyed by a value of XDG_CURRENT_DESKTOP.
+LOCK_COMMANDS = {
+    "X-Cinnamon": [["cinnamon-screensaver-command", "--lock"]],
+    "Cinnamon":   [["cinnamon-screensaver-command", "--lock"]],
+    "MATE":       [["mate-screensaver-command", "--lock"]],
+    "XFCE":       [["xflock4"]],
+    "GNOME":      [["loginctl", "lock-session"]],
+    "KDE":        [["loginctl", "lock-session"]],
+}
+FALLBACK_LOCK = [["loginctl", "lock-session"]]
+
+
+def lock_session():
+    """Lock the desktop session using the command for the current desktop."""
+    desktops = os.environ.get("XDG_CURRENT_DESKTOP", "").split(":")
+    candidates = []
+    for name in desktops:
+        candidates += LOCK_COMMANDS.get(name, [])
+    candidates += FALLBACK_LOCK
+
+    for cmd in candidates:
+        try:
+            if subprocess.run(cmd).returncode == 0:
+                return True
+        except FileNotFoundError:
+            continue
+    print("warning: could not lock the session; no working lock command found",
+          file=sys.stderr)
+    return False
+
+
+def main(plugin_name):
+    # Accept "matrix", "plugins/matrix" or "plugins/matrix.py".
+    plugin_name = os.path.splitext(os.path.basename(plugin_name))[0]
+
+    pygame.init()
+    info = pygame.display.Info()
+    size = (info.current_w, info.current_h)
+    screen = pygame.display.set_mode(size, pygame.FULLSCREEN | pygame.NOFRAME)
+    pygame.mouse.set_visible(False)
+    clock = pygame.time.Clock()
+
+    plugin = importlib.import_module(f"plugins.{plugin_name}")
+    plugin.init(screen, size)
+
+    start = pygame.time.get_ticks()
+    while True:
+        for event in pygame.event.get():
+            if pygame.time.get_ticks() - start < GRACE_MS:
+                continue
+            if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.MOUSEMOTION):
+                plugin.shutdown()
+                lock_session()          # lock while our window is still up
+                pygame.quit()
+                sys.exit()
+
+        dt = clock.tick(getattr(plugin, "FPS", DEFAULT_FPS)) / 1000.0
+        plugin.render(screen, dt)
+        pygame.display.flip()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        sys.exit("usage: screensaver.py <plugin>")
+    main(sys.argv[1])
