@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Screensaver runner. Usage: python3 screensaver.py <plugin>
+"""Screensaver runner. Usage: python3 screensaver.py <plugin> [--mouse-threshold PIXELS]
 
 A plugin is a module in plugins/ that defines:
     init(screen, size)   - called once after the display is set up
@@ -8,7 +8,9 @@ A plugin is a module in plugins/ that defines:
 Optional:
     FPS = <n>            - frame rate (default 30)
 """
+import argparse
 import importlib
+import math
 import os
 import subprocess
 import sys
@@ -49,7 +51,7 @@ def lock_session():
     return False
 
 
-def main(plugin_name):
+def main(plugin_name, mouse_threshold=0.0):
     # Accept "matrix", "plugins/matrix" or "plugins/matrix.py".
     plugin_name = os.path.splitext(os.path.basename(plugin_name))[0]
 
@@ -64,11 +66,20 @@ def main(plugin_name):
     plugin.init(screen, size)
 
     start = pygame.time.get_ticks()
+    baseline = None   # pointer position once the grace period ends
     while True:
+        if baseline is None and pygame.time.get_ticks() - start >= GRACE_MS:
+            baseline = pygame.mouse.get_pos()
+
         for event in pygame.event.get():
             if pygame.time.get_ticks() - start < GRACE_MS:
                 continue
-            if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.MOUSEMOTION):
+            moved_too_far = False
+            if event.type == pygame.MOUSEMOTION:
+                x, y = pygame.mouse.get_pos()
+                distance = math.hypot(x - baseline[0], y - baseline[1])
+                moved_too_far = distance > mouse_threshold
+            if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN) or moved_too_far:
                 plugin.shutdown()
                 lock_session()          # lock while our window is still up
                 pygame.quit()
@@ -80,6 +91,11 @@ def main(plugin_name):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("usage: screensaver.py <plugin>")
-    main(sys.argv[1])
+    parser = argparse.ArgumentParser(description="Plugin-based X11 screensaver.")
+    parser.add_argument("plugin", help="plugin name, e.g. matrix or starfield")
+    parser.add_argument("--mouse-threshold", type=float, default=0.0, metavar="PIXELS",
+                        help="exit on mouse motion only after the pointer moves more "
+                             "than this many pixels from its starting position "
+                             "(default: 0, i.e. any motion exits)")
+    args = parser.parse_args()
+    main(args.plugin, args.mouse_threshold)
