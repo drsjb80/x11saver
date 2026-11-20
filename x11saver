@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""x11saver runner. Usage: python3 x11saver.py <plugin> [--mouse-threshold PIXELS]
+"""x11saver runner. Usage: ./x11saver <plugin> [--mouse-threshold PIXELS]
 
 A plugin is a module in plugins/ that defines:
     init(screen, size)   - called once after the display is set up
@@ -16,6 +16,10 @@ import subprocess
 import sys
 
 import pygame
+
+# Resolve symlinks so plugins/ is found next to the real script, even when
+# this file is launched through a symlink on PATH.
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
 GRACE_MS = 1000   # ignore input for this long after start (avoids spurious events)
 DEFAULT_FPS = 30   # a plugin can set FPS = <n> at module level to override

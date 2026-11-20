@@ -7,13 +7,13 @@ locks the session and exits.
 ## Usage
 
 ```
-python3 x11saver.py matrix
-python3 x11saver.py starfield
+./x11saver matrix
+./x11saver starfield
 ```
 
 The plugin name can also be given as a path, e.g. `plugins/matrix`.
 
-Requires Python 3 and pygame.
+Requires Python 3 and pygame (`pip install -r requirements.txt`).
 
 ## Plugins
 
@@ -55,7 +55,7 @@ pass a threshold in pixels; motion only exits once the pointer has moved more
 than that far from where it was when the grace period ended:
 
 ```
-python3 x11saver.py matrix --mouse-threshold 10
+./x11saver matrix --mouse-threshold 10
 ```
 
 ## License
