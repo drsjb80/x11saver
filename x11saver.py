@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Screensaver runner. Usage: python3 screensaver.py <plugin> [--mouse-threshold PIXELS]
+"""x11saver runner. Usage: python3 x11saver.py <plugin> [--mouse-threshold PIXELS]
 
 A plugin is a module in plugins/ that defines:
     init(screen, size)   - called once after the display is set up

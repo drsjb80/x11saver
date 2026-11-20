@@ -7,8 +7,8 @@ locks the session and exits.
 ## Usage
 
 ```
-python3 screensaver.py matrix
-python3 screensaver.py starfield
+python3 x11saver.py matrix
+python3 x11saver.py starfield
 ```
 
 The plugin name can also be given as a path, e.g. `plugins/matrix`.
@@ -48,8 +48,15 @@ Only Cinnamon has been tested so far.
 ## Input handling
 
 Input is ignored for the first second so startup events don't close the
-screensaver immediately. After that, a key press, mouse click, or mouse motion
-exits.
+screensaver immediately. After that, a key press or mouse click exits.
+
+Mouse motion exits too, by default on any movement. To tolerate small jitter,
+pass a threshold in pixels; motion only exits once the pointer has moved more
+than that far from where it was when the grace period ended:
+
+```
+python3 x11saver.py matrix --mouse-threshold 10
+```
 
 ## License
 
