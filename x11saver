@@ -14,6 +14,7 @@ import math
 import os
 import subprocess
 import sys
+import time
 
 import pygame
 
@@ -94,12 +95,50 @@ def main(plugin_name, mouse_threshold=0.0):
         pygame.display.flip()
 
 
+def daemon(plugin_name, timeout_min, interval_s, mouse_threshold):
+    """Poll X idle time; when it passes timeout_min, run the saver until it exits."""
+    from Xlib import display as xdisplay
+    from Xlib.ext import screensaver
+
+    timeout_ms = timeout_min * 60 * 1000
+    script = os.path.realpath(__file__)
+    child_args = ["--mouse-threshold", str(mouse_threshold)]
+
+    try:
+        while True:
+            time.sleep(interval_s)
+            try:
+                # Reconnect each check: cheap, and survives an X server restart.
+                disp = xdisplay.Display()
+                try:
+                    idle = screensaver.query_info(disp.screen().root).idle
+                finally:
+                    disp.close()
+            except Exception as exc:
+                print(f"x11saver: idle check failed ({exc}); retrying", file=sys.stderr)
+                continue
+            if idle >= timeout_ms:
+                # Blocks until the saver exits (on input, after locking).
+                subprocess.run([sys.executable, script, plugin_name, *child_args])
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plugin-based X11 screensaver.")
     parser.add_argument("plugin", help="plugin name, e.g. matrix or starfield")
+    parser.add_argument("-d", "--daemon", action="store_true",
+                        help="run in the background and start the saver after idle time")
+    parser.add_argument("--timeout", type=float, default=10.0, metavar="MINUTES",
+                        help="daemon mode: idle minutes before starting (default: 10)")
+    parser.add_argument("--interval", type=float, default=60.0, metavar="SECONDS",
+                        help="daemon mode: how often to check idle time (default: 60)")
     parser.add_argument("--mouse-threshold", type=float, default=0.0, metavar="PIXELS",
                         help="exit on mouse motion only after the pointer moves more "
                              "than this many pixels from its starting position "
                              "(default: 0, i.e. any motion exits)")
     args = parser.parse_args()
-    main(args.plugin, args.mouse_threshold)
+    if args.daemon:
+        daemon(args.plugin, args.timeout, args.interval, args.mouse_threshold)
+    else:
+        main(args.plugin, args.mouse_threshold)

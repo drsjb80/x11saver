@@ -58,6 +58,31 @@ than that far from where it was when the grace period ended:
 ./x11saver matrix --mouse-threshold 10
 ```
 
+## Daemon mode
+
+`-d` runs x11saver in the background. It checks the X server's idle time once
+a minute, and when you've been idle for 10 minutes it starts the saver. When
+the saver exits (on input, after locking), the daemon keeps watching.
+
+```
+./x11saver -d matrix
+./x11saver -d starfield --timeout 5 --interval 30
+```
+
+- `--timeout MINUTES` sets the idle time before the saver starts (default 10).
+- `--interval SECONDS` sets how often idle time is checked (default 60).
+
+Stop the daemon with Ctrl-C, or `pkill -f "x11saver -d"`.
+
+Requires `python-xlib` (`pip install -r requirements.txt` installs it).
+
+Set the built-in screensaver's idle timeout to "never". Otherwise both will
+try to start, and the built-in one may lock the screen first.
+
+To start it at login, add the command to `~/.profile` and put `&` at the end so
+it runs in the background. If your profile runs before the X session starts,
+the daemon will print a warning each check until the display is available.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
