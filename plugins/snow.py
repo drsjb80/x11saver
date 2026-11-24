@@ -1,4 +1,11 @@
-"""Snow drifting down in a gentle wind and slowly piling up."""
+"""Snow drifting down in a gentle wind, piling up into drifts, then melting.
+
+The ground cycles through three phases:
+    build - near flakes land and the drifts grow
+    hold  - once the drifts are (nearly) full they stay for HOLD_SECONDS
+    melt  - the drifts sink evenly over MELT_SECONDS; new flakes don't stick
+When the ground is clear, a new drift shape is chosen and it builds again.
+"""
 import math
 import random
 
@@ -11,6 +18,9 @@ GROUND_COLOR = (215, 222, 235)
 CELL = 4                    # horizontal resolution of the snow pile, in px
 MAX_PILE = 0.12             # pile never grows past this fraction of the height
 SLOPE = 0.5 * CELL          # steepest step between neighbouring pile cells
+FULL = 0.95                 # fraction of the drift shape that counts as "full"
+HOLD_SECONDS = 120          # how long full drifts stay before melting
+MELT_SECONDS = 240          # how long the melt takes
 
 _flakes = []
 _pile = []
@@ -18,6 +28,9 @@ _caps = []                  # per-column max height: rolling drift shape
 _visible = 0                # number of pile columns actually on screen
 _size = None
 _time = 0.0
+_phase = "build"
+_phase_time = 0.0
+_melt_from = []             # pile heights when the melt started
 _sprites = {}
 
 
@@ -57,8 +70,17 @@ class _Flake:
         self.phase = random.uniform(0, 2 * math.pi)
 
 
+def _new_drift_shape(height):
+    """Two slow sine waves with random phases give rolling drifts when full."""
+    top = height * MAX_PILE
+    a, b = random.uniform(0, 2 * math.pi), random.uniform(0, 2 * math.pi)
+    return [top * (0.55 + 0.45 * (0.5 + 0.3 * math.sin(i * 0.011 + a)
+                                  + 0.2 * math.sin(i * 0.029 + b)))
+            for i in range(_visible + 1)]
+
+
 def init(screen, size):
-    global _flakes, _pile, _caps, _visible, _size, _time
+    global _flakes, _pile, _caps, _visible, _size, _time, _phase, _phase_time
     _size = size
     _time = 0.0
     width, height = size
@@ -69,12 +91,8 @@ def init(screen, size):
         flake.respawn(width, height, anywhere=True)
     _visible = (width - 1) // CELL + 1
     _pile = [0.0] * (_visible + 1)          # one extra column to reach the right edge
-    # Two slow sine waves with random phases give rolling drifts when full.
-    top = height * MAX_PILE
-    a, b = random.uniform(0, 2 * math.pi), random.uniform(0, 2 * math.pi)
-    _caps = [top * (0.55 + 0.45 * (0.5 + 0.3 * math.sin(i * 0.011 + a)
-                                   + 0.2 * math.sin(i * 0.029 + b)))
-             for i in range(len(_pile))]
+    _caps = _new_drift_shape(height)
+    _phase, _phase_time = "build", 0.0
 
 
 def _land(col, amount):
@@ -100,12 +118,33 @@ def _settle():
     _pile[_visible] = _pile[_visible - 1]   # off-screen column mirrors the edge
 
 
+def _advance_cycle(dt, height):
+    """Move the ground through build -> hold -> melt -> build."""
+    global _phase, _phase_time, _caps, _melt_from
+    _phase_time += dt
+    if _phase == "build":
+        if sum(_pile[:_visible]) >= FULL * sum(_caps[:_visible]):
+            _phase, _phase_time = "hold", 0.0
+    elif _phase == "hold":
+        if _phase_time >= HOLD_SECONDS:
+            _melt_from = _pile[:]
+            _phase, _phase_time = "melt", 0.0
+    else:  # melt: scale the whole pile down evenly, so its shape is kept
+        remaining = max(0.0, 1.0 - _phase_time / MELT_SECONDS)
+        for i in range(_visible + 1):
+            _pile[i] = _melt_from[i] * remaining
+        if remaining == 0.0:
+            _caps = _new_drift_shape(height)
+            _phase, _phase_time = "build", 0.0
+
+
 def render(screen, dt):
     global _time
     _time += dt
     width, height = _size
     # Horizontal wind in px/s, drifting slowly.
     wind = 25 * math.sin(_time * 0.07) + 15 * math.sin(_time * 0.31)
+    sticking = _phase != "melt"
 
     screen.fill(BACKGROUND)
 
@@ -117,7 +156,7 @@ def render(screen, dt):
 
         col = min(_visible - 1, int(x // CELL))
         if flake.y >= height - _pile[col]:
-            if flake.depth > 0.5:               # only near flakes add to the pile
+            if sticking and flake.depth > 0.5:  # only near flakes add to the pile
                 _land(col, flake.radius * 1.2)
             flake.respawn(width, height)
             continue
@@ -125,6 +164,7 @@ def render(screen, dt):
 
     _settle()
     _settle()
+    _advance_cycle(dt, height)
     points = [(0, height)]
     points += [(i * CELL, height - h) for i, h in enumerate(_pile)]
     points += [(width, height)]

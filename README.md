@@ -17,14 +17,34 @@ Requires Python 3 and pygame (`pip install -r requirements.txt`).
 
 ## Plugins
 
-Included:
+### thematrix
 
-| Plugin | Effect |
-|---|---|
-| `thematrix` | Green falling characters |
-| `starfield` | Flying through a field of stars |
-| `rain` | Slanted rain in shifting wind, with splashes |
-| `snow` | Drifting snow that slowly piles up into drifts |
+Green characters falling in columns, mixing ASCII and katakana. If no
+installed font can draw katakana, it uses ASCII only.
+
+![thematrix demo](docs/demos/thematrix.gif)
+
+### starfield
+
+Flying forward through a field of stars.
+
+![starfield demo](docs/demos/starfield.gif)
+
+### rain
+
+Slanted rain in a slowly shifting wind. Nearer drops are longer, brighter and
+faster, and throw small splashes when they land.
+
+![rain demo](docs/demos/rain.gif)
+
+### snow
+
+Soft flakes sway and drift as they fall. Nearer flakes pile up into rolling
+drifts, which hold for a while, melt away, and then build again in a new shape.
+
+![snow demo](docs/demos/snow.gif)
+
+### Writing a plugin
 
 A plugin is a module in `plugins/` that defines:
 
