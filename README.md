@@ -7,11 +7,11 @@ locks the session and exits.
 ## Usage
 
 ```
-./x11saver matrix
+./x11saver thematrix
 ./x11saver starfield
 ```
 
-The plugin name can also be given as a path, e.g. `plugins/matrix`.
+The plugin name can also be given as a path, e.g. `plugins/thematrix`.
 
 Requires Python 3 and pygame (`pip install -r requirements.txt`).
 
@@ -55,7 +55,7 @@ pass a threshold in pixels; motion only exits once the pointer has moved more
 than that far from where it was when the grace period ended:
 
 ```
-./x11saver matrix --mouse-threshold 10
+./x11saver thematrix --mouse-threshold 10
 ```
 
 ## Daemon mode
@@ -65,7 +65,7 @@ a minute, and when you've been idle for 10 minutes it starts the saver. When
 the saver exits (on input, after locking), the daemon keeps watching.
 
 ```
-./x11saver -d matrix
+./x11saver -d thematrix
 ./x11saver -d starfield --timeout 5 --interval 30
 ```
 

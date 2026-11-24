@@ -57,7 +57,7 @@ def lock_session():
 
 
 def main(plugin_name, mouse_threshold=0.0):
-    # Accept "matrix", "plugins/matrix" or "plugins/matrix.py".
+    # Accept "thematrix", "plugins/thematrix" or "plugins/thematrix.py".
     plugin_name = os.path.splitext(os.path.basename(plugin_name))[0]
 
     pygame.init()
@@ -126,7 +126,7 @@ def daemon(plugin_name, timeout_min, interval_s, mouse_threshold):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Plugin-based X11 screensaver.")
-    parser.add_argument("plugin", help="plugin name, e.g. matrix or starfield")
+    parser.add_argument("plugin", help="plugin name, e.g. thematrix or starfield")
     parser.add_argument("-d", "--daemon", action="store_true",
                         help="run in the background and start the saver after idle time")
     parser.add_argument("--timeout", type=float, default=10.0, metavar="MINUTES",
