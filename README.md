@@ -17,6 +17,15 @@ Requires Python 3 and pygame (`pip install -r requirements.txt`).
 
 ## Plugins
 
+Included:
+
+| Plugin | Effect |
+|---|---|
+| `thematrix` | Green falling characters |
+| `starfield` | Flying through a field of stars |
+| `rain` | Slanted rain in shifting wind, with splashes |
+| `snow` | Drifting snow that slowly piles up into drifts |
+
 A plugin is a module in `plugins/` that defines:
 
 - `init(screen, size)`: called once after the display is set up
