@@ -56,9 +56,28 @@ def lock_session():
     return False
 
 
+def normalize_plugin_name(name):
+    """Accept "thematrix", "plugins/thematrix" or "plugins/thematrix.py"."""
+    return os.path.splitext(os.path.basename(name))[0]
+
+
+def should_exit(event_type, pos, baseline, threshold):
+    """Decide whether an input event should end the screensaver.
+
+    baseline is the pointer position when the grace period ended, or None
+    while still in the grace period (input is ignored then).
+    """
+    if baseline is None:
+        return False
+    if event_type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
+        return True
+    if event_type == pygame.MOUSEMOTION:
+        return math.hypot(pos[0] - baseline[0], pos[1] - baseline[1]) > threshold
+    return False
+
+
 def main(plugin_name, mouse_threshold=0.0):
-    # Accept "thematrix", "plugins/thematrix" or "plugins/thematrix.py".
-    plugin_name = os.path.splitext(os.path.basename(plugin_name))[0]
+    plugin_name = normalize_plugin_name(plugin_name)
 
     pygame.init()
     info = pygame.display.Info()
@@ -73,18 +92,13 @@ def main(plugin_name, mouse_threshold=0.0):
     start = pygame.time.get_ticks()
     baseline = None   # pointer position once the grace period ends
     while True:
+        # Decide grace once per frame, so baseline is always set before any
+        # event is judged against it.
         if baseline is None and pygame.time.get_ticks() - start >= GRACE_MS:
             baseline = pygame.mouse.get_pos()
 
         for event in pygame.event.get():
-            if pygame.time.get_ticks() - start < GRACE_MS:
-                continue
-            moved_too_far = False
-            if event.type == pygame.MOUSEMOTION:
-                x, y = pygame.mouse.get_pos()
-                distance = math.hypot(x - baseline[0], y - baseline[1])
-                moved_too_far = distance > mouse_threshold
-            if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN) or moved_too_far:
+            if should_exit(event.type, pygame.mouse.get_pos(), baseline, mouse_threshold):
                 plugin.shutdown()
                 lock_session()          # lock while our window is still up
                 pygame.quit()
@@ -95,36 +109,51 @@ def main(plugin_name, mouse_threshold=0.0):
         pygame.display.flip()
 
 
-def daemon(plugin_name, timeout_min, interval_s, mouse_threshold):
-    """Poll X idle time; when it passes timeout_min, run the saver until it exits."""
+def x_idle_ms():
+    """Milliseconds since the last X input, via the XScreenSaver extension."""
     from Xlib import display as xdisplay
     from Xlib.ext import screensaver
 
+    # Reconnect each check: cheap, and survives an X server restart.
+    disp = xdisplay.Display()
+    try:
+        return screensaver.query_info(disp.screen().root).idle
+    finally:
+        disp.close()
+
+
+def check_once(get_idle_ms, timeout_ms, launch):
+    """One daemon check: launch the saver if idle long enough.
+
+    Returns True if the saver was launched. Errors reading idle time are
+    reported and skipped, so the daemon keeps running.
+    """
+    try:
+        idle = get_idle_ms()
+    except Exception as exc:
+        print(f"x11saver: idle check failed ({exc}); retrying", file=sys.stderr)
+        return False
+    if idle >= timeout_ms:
+        launch()        # blocks until the saver exits (on input, after locking)
+        return True
+    return False
+
+
+def daemon(plugin_name, timeout_min, interval_s, mouse_threshold):
+    """Poll X idle time; when it passes timeout_min, run the saver until it exits."""
     timeout_ms = timeout_min * 60 * 1000
-    script = os.path.realpath(__file__)
-    child_args = ["--mouse-threshold", str(mouse_threshold)]
+    cmd = [sys.executable, os.path.realpath(__file__), plugin_name,
+           "--mouse-threshold", str(mouse_threshold)]
 
     try:
         while True:
             time.sleep(interval_s)
-            try:
-                # Reconnect each check: cheap, and survives an X server restart.
-                disp = xdisplay.Display()
-                try:
-                    idle = screensaver.query_info(disp.screen().root).idle
-                finally:
-                    disp.close()
-            except Exception as exc:
-                print(f"x11saver: idle check failed ({exc}); retrying", file=sys.stderr)
-                continue
-            if idle >= timeout_ms:
-                # Blocks until the saver exits (on input, after locking).
-                subprocess.run([sys.executable, script, plugin_name, *child_args])
+            check_once(x_idle_ms, timeout_ms, lambda: subprocess.run(cmd))
     except KeyboardInterrupt:
         sys.exit(0)
 
 
-if __name__ == "__main__":
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Plugin-based X11 screensaver.")
     parser.add_argument("plugin", help="plugin name, e.g. thematrix or starfield")
     parser.add_argument("-d", "--daemon", action="store_true",
@@ -137,7 +166,11 @@ if __name__ == "__main__":
                         help="exit on mouse motion only after the pointer moves more "
                              "than this many pixels from its starting position "
                              "(default: 0, i.e. any motion exits)")
-    args = parser.parse_args()
+    return parser.parse_args(argv)
+
+
+if __name__ == "__main__":
+    args = parse_args()
     if args.daemon:
         daemon(args.plugin, args.timeout, args.interval, args.mouse_threshold)
     else:

@@ -126,6 +126,28 @@ To start it at login, add the command to `~/.profile` and put `&` at the end so
 it runs in the background. If your profile runs before the X session starts,
 the daemon will print a warning each check until the display is available.
 
+## Testing
+
+The tests run headless (no display needed), using SDL's dummy video driver.
+Set up a virtual environment once; `--system-site-packages` lets it reuse a
+distro-installed pygame and python-xlib:
+
+```
+python3 -m venv --system-site-packages .venv
+.venv/bin/pip install -r requirements-dev.txt
+```
+
+Then run the tests with a coverage report:
+
+```
+.venv/bin/python -m pytest --cov
+```
+
+The plugin smoke tests pick up every file in `plugins/` automatically, so a
+new plugin is checked at several screen sizes without writing anything. A test
+also fails if a plugin is missing from `DEMOS` in `tools/capture`. The capture
+tests that encode GIFs are skipped when `ffmpeg` isn't installed.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

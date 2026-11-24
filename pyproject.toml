@@ -1,0 +1,19 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    # Raised inside the system pygame package, not by this project.
+    "ignore::DeprecationWarning:pygame.pkgdata",
+    "ignore::DeprecationWarning:pkg_resources",
+    "ignore:Your system is avx2 capable:RuntimeWarning",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [".venv/*", "tests/*"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_also = ['if __name__ == "__main__":']
