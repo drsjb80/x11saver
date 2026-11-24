@@ -56,6 +56,20 @@ Optionally, a plugin can set a module-level `FPS` (default 30).
 
 To add an effect, drop a new file in `plugins/` following that interface.
 
+### Demo GIFs
+
+`tools/capture` renders a plugin off-screen (no window needed) and saves a
+looping GIF. It requires `ffmpeg`.
+
+```
+tools/capture rain                          # writes rain.gif
+tools/capture snow --warmup 200 -o snow.gif # simulate 200s first so drifts form
+tools/capture --demos                       # regenerate all GIFs in docs/demos/
+```
+
+When you add a plugin, add an entry for it to `DEMOS` in `tools/capture` so
+`--demos` includes it.
+
 ## Locking
 
 On exit the runner locks the session before closing its window, so the
