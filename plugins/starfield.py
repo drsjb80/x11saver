@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 drsjb80. See the license in x11saver.
 """Starfield flying toward the viewer."""
 import random
 

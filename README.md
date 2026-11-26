@@ -6,6 +6,30 @@ A small, plugin-based screensaver for X11 desktops. It runs a fullscreen
 pygame window with an effect, and on the first key press or mouse click it
 locks the session and exits.
 
+## Install
+
+To install just the program into `~/bin` (`x11saver` plus the `plugins/`
+directory, nothing else):
+
+```
+mkdir -p ~/bin
+curl -L https://github.com/drsjb80/x11saver/archive/refs/heads/main.tar.gz \
+    | tar xz -C ~/bin --strip-components=1
+```
+
+Run the same command again to update. It overwrites the existing files.
+
+It also needs pygame and python-xlib. Install them with your package manager
+(`sudo apt install python3-pygame python3-xlib` on Debian/Ubuntu/Mint), or with
+`pip install pygame python-xlib`.
+
+On most distros `~/.profile` adds `~/bin` to `PATH` if it exists when you log
+in. If you just created it, log out and back in, or run `~/bin/x11saver`
+directly.
+
+To work on x11saver itself, clone the repository instead. The download leaves
+out the tests, tools and docs.
+
 ## Usage
 
 ```
@@ -152,4 +176,5 @@ tests that encode GIFs are skipped when `ffmpeg` isn't installed.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). The same notice is at the top of `x11saver`, so
+the download-only install carries it too.

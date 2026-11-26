@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 drsjb80. See the license in x11saver.
 """Snow drifting down in a gentle wind, piling up into drifts, then melting.
 
 The ground cycles through three phases:

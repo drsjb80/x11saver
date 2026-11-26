@@ -1,0 +1,13 @@
+# Leave these out of GitHub's tarball/zip downloads, so a download contains
+# only x11saver and plugins/ and can be unpacked straight into ~/bin.
+.github/              export-ignore
+docs/                 export-ignore
+tests/                export-ignore
+tools/                export-ignore
+.gitattributes        export-ignore
+.gitignore            export-ignore
+LICENSE               export-ignore
+README.md             export-ignore
+pyproject.toml        export-ignore
+requirements.txt      export-ignore
+requirements-dev.txt  export-ignore

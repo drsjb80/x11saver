@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 drsjb80. See the license in x11saver.
 """Rain falling at a slant in shifting wind, with splashes on the ground."""
 import math
 import random
