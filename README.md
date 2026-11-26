@@ -1,5 +1,7 @@
 # x11saver
 
+[![tests](https://github.com/drsjb80/x11saver/actions/workflows/tests.yml/badge.svg)](https://github.com/drsjb80/x11saver/actions/workflows/tests.yml)
+
 A small, plugin-based screensaver for X11 desktops. It runs a fullscreen
 pygame window with an effect, and on the first key press or mouse click it
 locks the session and exits.
