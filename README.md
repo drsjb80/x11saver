@@ -6,6 +6,13 @@ A small, plugin-based screensaver for X11 desktops. It runs a fullscreen
 pygame window with an effect, and on the first key press or mouse click it
 locks the session and exits.
 
+This isn't a traditional lock/screensaver, and works a little differently from
+one. It behaves almost the same, but you have to turn off the system lock
+screen yourself (see [Daemon mode](#daemon-mode)), since otherwise the built-in
+one may start and lock first. It also doesn't restart once the lock or login
+screen is showing: while the session is locked, the saver stays stopped and
+starts again only after you unlock and go idle.
+
 ## Install
 
 To install just the program into `~/bin` (`x11saver` plus the `plugins/`
